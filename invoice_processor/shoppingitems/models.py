@@ -8,3 +8,19 @@ class ShoppingItems(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Brands(models.Model):
+        BRAND_CATEGORIES = [
+             ('Vitamins', 'Vitamins'),
+             ('Beauty', 'Beauty'),
+             ('Skincare', 'Skincare'),
+             ('Babycare', 'Babycare'),
+             ('Cosmetics', 'Cosmetics')
+        ]
+
+        name = models.CharField(max_length=50)
+        category = models.CharField(max_length=20, choices=BRAND_CATEGORIES)
+
+        def __str__(self):
+             return f'{self.name} ({self.get_category_display()})'
