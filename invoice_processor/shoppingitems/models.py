@@ -2,11 +2,12 @@ from django.db import models
 
 class Brand(models.Model):
         BRAND_CATEGORIES = [
-             ('Vitamins', 'Vitamins'),
-             ('Beauty', 'Beauty'),
-             ('Skincare', 'Skincare'),
-             ('Babycare', 'Babycare'),
-             ('Cosmetics', 'Cosmetics')
+             ('vitamins', 'Vitamins'),
+             ('beauty', 'Beauty'),
+             ('skin-care', 'Skincare'),
+             ('baby-care', 'Babycare'),
+             ('cosmetics', 'Cosmetics'),
+             ('unknown', 'Unknown')
         ]
 
         name = models.CharField(max_length=50)

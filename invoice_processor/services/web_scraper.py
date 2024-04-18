@@ -1,12 +1,13 @@
 import services.webdriver_setup as setup
+import pandas as pd
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 
-def get_brand_names(urls: list, wait_sec: int = 10):
+def get_brand_names(urls: list, wait_sec: int = 10) -> pd.DataFrame:
     driver = setup.get_driver()
 
-    brand_list = []
+    brand_df = pd.DataFrame(columns=['name', 'category'])
 
     try:
         for url in urls:
@@ -26,12 +27,27 @@ def get_brand_names(urls: list, wait_sec: int = 10):
             # Extract brand names
             brand_elements = driver.find_elements(By.CSS_SELECTOR, ".category-results-top-category__name")
             brands = [element.text for element in brand_elements]
-            brand_list.extend(brands)
+
+            # Extract category of brands
+            category = get_category_name(url)
+            brand_data = pd.DataFrame({
+                'name': brands,
+                'category': [category] * len(brands)
+            })
+
+            brand_df = pd.concat([brand_df, brand_data], ignore_index=True)
 
     finally:
         driver.quit()
 
-    return brand_list
+    return brand_df
 
 
+def get_category_name(url: str) -> str:
+    try:
+        category = url.split('/')[-1]
+    except:
+        category = 'unknown'
+
+    return category
 
