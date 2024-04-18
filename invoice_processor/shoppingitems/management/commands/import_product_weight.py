@@ -3,6 +3,8 @@ import os
 from django.core.management.base import BaseCommand, CommandParser
 from shoppingitems.models import Product
 import invoice_processor.settings as settings
+from services.rtf_converter import convert_rtf_to_csv
+from datetime import datetime
 
 class Command(BaseCommand):
     help = "Bulk import product weight from a CSV file - used to calculate shipping fees"
@@ -11,17 +13,25 @@ class Command(BaseCommand):
         return parser.add_argument('csv_file_path', type=str)
     
     def handle(self, *args, **options) -> str | None:
-        file_path = os.path.join(settings.DATA_DIR, 'yourfile.csv')
-        print(settings.DATA_DIR)  # Add this in your views or commands to check the path
+        csv_file_path = options['csv_file_path']
+        time = datetime.now()
 
-        with open(file_path, 'r') as file:
+        # Convert rtf data to csv
+        file_path = os.path.join(settings.DATA_DIR, csv_file_path)
+        convert_rtf_to_csv(file_path, f'product_weight_{time}.csv')
+
+        csv_path = os.path.join(settings.DATA_DIR, f'product_weight_{time}.csv')
+
+        with open(csv_path, 'r') as file:
             reader = csv.DictReader(file)
+            
             products = []
             for row in reader:
+                print(row)
                 products.append(Product(
                     name=row['name'],
                     weight=row['weight']
                 ))
 
             Product.objects.bulk_create(products)
-            self.stdout.write(self.style.SUCCESS('Successfully imported products" weight'))
+            self.stdout.write(self.style.SUCCESS("Successfully imported products' weight"))
