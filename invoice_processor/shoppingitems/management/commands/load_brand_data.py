@@ -16,7 +16,7 @@ class Command(BaseCommand):
                     category=row['category']
                 )
 
-                self.stdout.write(self.style.SUCCESS(f'Processed entry: {row["Brand"]} - {row["Category"]}'))
+                self.stdout.write(self.style.SUCCESS(f'Processed entry: {row["name"]} - {row["category"]}'))
 
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Failed to process entry {row["Brand"]} - {row["Category"]} due to {str(e)}'))
+                self.stdout.write(self.style.ERROR(f'Failed to process entry {row["name"]} - {row["category"]} due to {str(e)}'))

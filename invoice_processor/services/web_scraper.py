@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 
-def get_brand_names(urls: list, wait_sec: int = 10) -> pd.DataFrame:
+def get_brand_names(urls: list, wait_sec: int = 20) -> pd.DataFrame:
     driver = setup.get_driver()
 
     brand_df = pd.DataFrame(columns=['name', 'category'])
@@ -36,6 +36,8 @@ def get_brand_names(urls: list, wait_sec: int = 10) -> pd.DataFrame:
             })
 
             brand_df = pd.concat([brand_df, brand_data], ignore_index=True)
+        
+        brand_df = brand_df.drop_duplicates(subset='name', keep='first')
 
     finally:
         driver.quit()
