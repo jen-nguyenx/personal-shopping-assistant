@@ -3,11 +3,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 from django.core.management.base import BaseCommand, CommandParser
 from shoppingitems.models import Product, Brand, Transaction
+from shoppingitems.constants import SHIPPING_COST_AUD, CURRENCY_EXCHANGE, MARKUP
 import invoice_processor.settings as settings
 import requests
+import openpyxl
 import re
 import os
-from constants import SHIPPING_COST_AUD
+
 
 class Command(BaseCommand):
     help = 'Process tax invoice'
@@ -42,14 +44,14 @@ class Command(BaseCommand):
         # Get arguments from parser
         start_date = options['start_date']
         end_date = options['end_date']
-        filename = options.get('filename', f'supplements_price_{datetime.now().date()}')
+        filename = options['filename'] if options['filename'] else f'supplements_price_{datetime.now().strftime("%Y%m%d")}.csv'
 
         # Load data
         self.stdout.write(self.style.SUCCESS(f'Processing invoices from {start_date} to {end_date}'))
         invoice_df = self.get_invoices(start_date, end_date)
 
         # Process data
-        self.process_invoices(invoice_df)
+        self.process_invoices(invoice_df, filename)
     
 
     def get_invoices(self, start_date, end_date, prefix: str = 'invoice'):
@@ -70,19 +72,29 @@ class Command(BaseCommand):
                 continue
             else:
                 self.stdout.write(self.style.SUCCESS(f'Processing file {file_name}'))            
-                files.extend(file_path)
+                files.append(file_path)
         
         invoice_df = pd.concat([pd.read_csv(file) for file in files])
 
         return invoice_df
     
 
-    def process_invoices(self, invoice_df: pd.DataFrame):
+    def process_invoices(self, invoice_df: pd.DataFrame, filename: str):
+        # Process data
         invoice_df['Brand'] = invoice_df['Product'].apply(self.extract_brand_info)
-        invoice_df['Weight'] = invoice_df['Weight'].apply(lambda x: self.get_product_weight(x))
-        
+        invoice_df['Weight'] = invoice_df['Product'].apply(lambda x: self.get_product_weight(x))
+        invoice_df['Shipping Cost'] = invoice_df['Weight'] * SHIPPING_COST_AUD
+        invoice_df['AUD Price with Shipping'] = invoice_df['Price Each'] + invoice_df['Shipping Cost']
+        invoice_df['VND Price with Shipping'] = invoice_df['AUD Price with Shipping'] * CURRENCY_EXCHANGE
+        invoice_df['VND Price with Markup'] = invoice_df['VND Price with Shipping'] * MARKUP
 
-        return None
+        # Save data to excel
+
+        output_path = os.path.join(settings.PROCESSED_FILE_DIR, filename)
+        invoice_df.to_csv(output_path, index=False)
+        self.stdout.write(self.style.SUCCESS(f'Data successfully written to {output_path}'))
+
+        return invoice_df
 
 
 
