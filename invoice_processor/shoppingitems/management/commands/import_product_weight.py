@@ -25,13 +25,9 @@ class Command(BaseCommand):
         with open(csv_path, 'r') as file:
             reader = csv.DictReader(file)
             
-            products = []
             for row in reader:
-                print(row)
-                products.append(Product(
+                Product.objects.update_or_create(
                     name=row['name'],
                     weight=row['weight']
-                ))
-
-            Product.objects.bulk_create(products)
+                )
             self.stdout.write(self.style.SUCCESS("Successfully imported products' weight"))
