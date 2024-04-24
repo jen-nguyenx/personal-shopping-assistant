@@ -44,7 +44,7 @@ class Command(BaseCommand):
         # Get arguments from parser
         start_date = options['start_date']
         end_date = options['end_date']
-        filename = options['filename'] if options['filename'] else f'supplements_price_{datetime.now().strftime("%Y%m%d")}.csv'
+        filename = options['filename'] if options['filename'] else f'supplements_price_{datetime.now().strftime("%d%m%Y")}.csv'
 
         # Load data
         self.stdout.write(self.style.SUCCESS(f'Processing invoices from {start_date} to {end_date}'))
@@ -83,10 +83,10 @@ class Command(BaseCommand):
         # Process data
         invoice_df['Brand'] = invoice_df['Product'].apply(self.extract_brand_info)
         invoice_df['Weight'] = invoice_df['Product'].apply(lambda x: self.get_product_weight(x))
-        invoice_df['Shipping Cost'] = invoice_df['Weight'] * SHIPPING_COST_AUD
-        invoice_df['AUD Price with Shipping'] = invoice_df['Price Each'] + invoice_df['Shipping Cost']
-        invoice_df['VND Price with Shipping'] = invoice_df['AUD Price with Shipping'] * CURRENCY_EXCHANGE
-        invoice_df['VND Price with Markup'] = invoice_df['VND Price with Shipping'] * MARKUP
+        invoice_df['Shipping Cost'] = (invoice_df['Weight'] * SHIPPING_COST_AUD).astype(int)
+        invoice_df['AUD Price with Shipping'] = (invoice_df['Price Each'] + invoice_df['Shipping Cost']).astype(int)
+        invoice_df['VND Price with Shipping'] = (invoice_df['AUD Price with Shipping'] * CURRENCY_EXCHANGE).astype(int)
+        invoice_df['VND Price with Markup'] = (invoice_df['VND Price with Shipping'] * MARKUP).astype(int)
 
         # Save data to excel
 
