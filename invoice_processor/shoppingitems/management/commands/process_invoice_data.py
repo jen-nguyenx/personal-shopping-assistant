@@ -52,6 +52,11 @@ class Command(BaseCommand):
 
         # Process data
         self.process_invoices(invoice_df, filename)
+
+        print(invoice_df)
+
+        # Save to database
+        self.load_transaction_data(invoice_df)
     
 
     def get_invoices(self, start_date, end_date, prefix: str = 'invoice'):
@@ -83,10 +88,10 @@ class Command(BaseCommand):
         # Process data
         invoice_df['Brand'] = invoice_df['Product'].apply(self.extract_brand_info)
         invoice_df['Weight'] = invoice_df['Product'].apply(lambda x: self.get_product_weight(x))
-        invoice_df['Shipping Cost'] = (invoice_df['Weight'] * SHIPPING_COST_AUD).astype(int)
-        invoice_df['AUD Price with Shipping'] = (invoice_df['Price Each'] + invoice_df['Shipping Cost']).astype(int)
-        invoice_df['VND Price with Shipping'] = (invoice_df['AUD Price with Shipping'] * CURRENCY_EXCHANGE).astype(int)
-        invoice_df['VND Price with Markup'] = (invoice_df['VND Price with Shipping'] * MARKUP).astype(int)
+        invoice_df['Shipping Cost'] = round(invoice_df['Weight'] * SHIPPING_COST_AUD, ndigits=0)
+        invoice_df['AUD Price with Shipping'] = round(invoice_df['Price Each'] + invoice_df['Shipping Cost'], ndigits=0)
+        invoice_df['VND Price with Shipping'] = round(invoice_df['AUD Price with Shipping'] * CURRENCY_EXCHANGE, ndigits=0)
+        invoice_df['VND Price with Markup'] = round(invoice_df['VND Price with Shipping'] * MARKUP, ndigits=0)
 
         # Save data to excel
 
@@ -95,7 +100,31 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Data successfully written to {output_path}'))
 
         return invoice_df
+    
+    def load_transaction_data(self, invoice_df: pd.DataFrame):
+        for index, row in invoice_df.iterrows():
+            try:
+                # Retrieve product instance
+                product, created = Product.objects.get_or_create(
+                    name=row['Product'] 
+                )
 
+                # Retrieve brand instance
+                brand, created = Brand.objects.get_or_create(
+                    name=row['Brand'] 
+                )
+
+                Transaction.objects.get_or_create(
+                    product = product,
+                    brand = brand,
+                    quantity = row['Quantity'],
+                    price_aud = row['Price Each']
+                )
+            
+                self.stdout.write(self.style.SUCCESS(f'Transaction successfully processed to database {row['Product']}'))
+
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'{row['Product']} has not been written to the database due to {e}'))
 
 
     def extract_brand_info(self, product_name: pd.Series):
